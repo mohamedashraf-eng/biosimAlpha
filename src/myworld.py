@@ -82,7 +82,7 @@ class Creature(object):
     def move_diagld(self):
         self.movediagld(self.__idx)
 
-
+###
 class MyWorld(object):
     creatures_id = 0
 
@@ -99,6 +99,7 @@ class MyWorld(object):
 
     ##
     def __creature_ginit(self, creature_obj):
+        """ Initialize the creature graphics usage """
         #
         creature_obj.movement_init(
             moveright=self.mygraphics.move_right,
@@ -120,15 +121,21 @@ class MyWorld(object):
         else:
             raise IndexError("Creature index out of range")
 
+    def spawn_creature(self):
+        creature = Creature(MyWorld.creatures_id)
+        self.__creature_ginit(creature)
+        self.mygraphics.spawnCircle()
+        self.__creatures.append(creature)
+
+        MyWorld.creatures_id += 1
+        
     def spawn_creatures(self, n):
-        for i in range(0, n):
-            creature = Creature(i)
-            self.__creature_ginit(creature)
-            self.mygraphics.spawnCircle()
-            self.__creatures.append(creature)
+        for _ in range(0, n):
+            self.spawn_creature()
 
-            MyWorld.creatures_id += 1
-
+    def kill_creature(self, creatureIdx):
+        self.mygraphics.killCircle(creatureIdx)
+        
     def refresh_creatures(self):
         self.mygraphics.refreshCircles()
 

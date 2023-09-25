@@ -309,57 +309,5 @@ class MyGraphics(object):
 
             if (circle_obj.x, circle_obj.y) in self.__lockedGrids:
                 self.__unlockGrid((circle_obj.x, circle_obj.y))
-
+            del circle_obj
             MyGraphics.circle_counter_q -= 1
-
-    ###
-    # def main_loop(self):
-    #     try:
-    #         generation = 1
-    #         frame = 1
-    #         while (generation <= GENERATIONS):
-    #             while (frame <= FRAMES_PER_GEN) and (MyGraphics.runSimulation):
-    #                 #
-    #                 self.__isSimulationDestroyed()
-
-    #                 self.__clearScreen()
-
-    #                 # Draw the grid
-    #                 if GRID_ENABLED:
-    #                     self.__drawGrid()
-
-    #                 self.refreshCircles()
-
-    #                 #
-    #                 self.__runnable_mainLoop()
-    #                 #
-
-    #                 # Swap buffers
-    #                 self.__refreshScreen()
-
-    #                 if COLLISON_RESOLVER_ENABLED:
-    #                     self.__resolveCollisions()
-
-    #                 if INTEGRITY_CHECKER_ENABLED:
-    #                     self.__integrityChecker()
-
-    #                 # Control the FPS
-    #                 self.clock.tick(__SIM_SPEED__)
-
-    #                 frame += 1
-    #                 print(f"Frame: {frame}")
-    #             generation += 1
-    #             frame = 0
-    #             print(f"Generation: {generation}")
-    #             #
-    #             if not MyGraphics.runSimulation:
-    #                 self.__destorySimulation()
-    #     except Exception as e:
-    #         # Display an error message on the screen
-    #         print(f"An error occurred: {e}")
-    #         if not MyGraphics.runSimulation:
-    #             self.__destorySimulation()
-
-
-####
-# myWorld = MyGraphics("MyOpenWorld", print("Working callback"))
