@@ -8,9 +8,8 @@ WHITE = (229, 229, 229)
 BLACK = (0, 0, 0)
 ##
 COLLISON_RESOLVER_ENABLED = False
-GRID_ENABLED = False
+GRID_ENABLED = True
 INTEGRITY_CHECKER_ENABLED = False
-
 # Screen params
 MAIN_WINDOW_BG_COLOR = WHITE
 SCREEN_WIDTH = 1080
@@ -20,6 +19,7 @@ GRID_SIZE = 12
 GRID_SIZE_TO_CIRCLE_RADIUS_FACTOR = 0.01
 # __SIM_SPEED__ = 30  # FPS
 ##
+JUMP_FACTOR_MAX = 10
 
 # Circle class
 class Circle:
@@ -229,16 +229,21 @@ class MyGraphics(object):
         if 0 <= circleIdx < len(self.__circles):
             self.__circles[circleIdx].draw(self.screen)
 
-    def __moveCircle(self, circleIdx, moving_dir: MovingDirection):
+    def __moveCircle(self, circleIdx, moving_dir: MovingDirection, jumpFactor=1):
         if 0 <= circleIdx < len(self.__circles):
             circle_obj = self.__circles[circleIdx]
 
             if moving_dir in MyGraphics.directions:
                 dx, dy = MyGraphics.directions[moving_dir]
 
-                # Calculate the new position
-                new_x = circle_obj.x + dx
-                new_y = circle_obj.y + dy
+                if jumpFactor <= 0:
+                    jumpFactor = 1
+                if jumpFactor >= JUMP_FACTOR_MAX:
+                    jumpFactor = JUMP_FACTOR_MAX
+
+                # Calculate the new position with the jump factor
+                new_x = circle_obj.x + (dx * jumpFactor)
+                new_y = circle_obj.y + (dy * jumpFactor)
 
                 # Ensure the circle stays within the screen boundaries
                 new_x = max(GRID_SIZE // 2, min(new_x, SCREEN_WIDTH - GRID_SIZE // 2))
@@ -249,38 +254,38 @@ class MyGraphics(object):
                     self.__lockGrid((new_x, new_y))
                     circle_obj.move(new_x, new_y)
             else:
-                pass
+                print("Error: Invalid `moving_dir`")
         else:
-            pass
+            print(f"Invalid circle index: {circleIdx}")
 
     def __getRandomGridPos(self):
         return random.choice(self.__gridCenters)
 
     ####
 
-    def move_left(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.LEFT)
+    def move_left(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.LEFT, jumpFactor)
 
-    def move_right(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.RIGHT)
+    def move_right(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.RIGHT, jumpFactor)
 
-    def move_up(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.UP)
+    def move_up(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.UP, jumpFactor)
 
-    def move_down(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DOWN)
+    def move_down(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DOWN, jumpFactor)
 
-    def move_diagru(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGRU)
+    def move_diagru(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGRU, jumpFactor)
 
-    def move_diagrd(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGRD)
+    def move_diagrd(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGRD, jumpFactor)
 
-    def move_diaglu(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGLU)
+    def move_diaglu(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGLU, jumpFactor)
 
-    def move_diagld(self, circle_index):
-        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGLD)
+    def move_diagld(self, circle_index, jumpFactor=1):
+        self.__moveCircle(circle_index, MyGraphics.MovingDirection.DIAGLD, jumpFactor)
 
     def getRandomColorRGB(self) -> tuple:
         return (random.randint(0, 200), random.randint(0, 200), random.randint(0, 200))

@@ -3,17 +3,18 @@ from time import sleep
 import random
 
 ####################
-WORLD_SPEED = 25
-FRAMES_PER_GEN = 60
+WORLD_SPEED = 12
+FRAMES_PER_GEN = 500
 GENERATIONS = 5000
 POPULATION = 100
 ####################
 
+
 class Creature(object):
     def __init__(self, creatureIdx):
         self.__idx = creatureIdx
-        self.__uuid = 0 #TODO
-        self.__genome = "NaN" #TODO
+        self.__uuid = 0  # TODO
+        self.__genome = "NaN"  # TODO
 
     def movement_init(
         self,
@@ -38,7 +39,7 @@ class Creature(object):
     def behaviour_init(self):
         pass
 
-    # Behaviours
+    # drunk genome \ [linked graphics: done][created graphics: yes]
     def behaviour_randmove(self):
         movement_methods = [
             self.move_right,
@@ -52,35 +53,45 @@ class Creature(object):
             # Add other movement methods here
         ]
         random_movement = random.choice(movement_methods)
-        random_movement()
+        random_movement(jumpFactor=0)
 
-    def behaviour_nav(self):
+    # navigate genome \ [linked graphics: x][created graphics: no]
+    def behaviour_navigate(self):
         pass
-    
-    # Movements
-    def move_right(self):
-        self.moveright(self.__idx)
 
-    def move_up(self):
-        self.moveup(self.__idx)
+    # kill genome \ [linked graphics: x][created graphics: no]
+    def behaviour_kill(self):
+        pass
 
-    def move_down(self):
-        self.movedown(self.__idx)
+    # kill jump \ [linked graphics: x][created graphics: no]
+    def behaviour_jump(self):
+        pass
 
-    def move_left(self):
-        self.moveleft(self.__idx)
+    # Movements genomes \ [linked graphics: done][created graphics: yes]
+    def move_right(self, jumpFactor=0):
+        self.moveright(self.__idx, jumpFactor)
 
-    def move_diagru(self):
-        self.movediagru(self.__idx)
+    def move_up(self, jumpFactor=0):
+        self.moveup(self.__idx, jumpFactor)
 
-    def move_diagrd(self):
-        self.movediagrd(self.__idx)
+    def move_down(self, jumpFactor=0):
+        self.movedown(self.__idx, jumpFactor)
 
-    def move_diaglu(self):
-        self.movediaglu(self.__idx)
+    def move_left(self, jumpFactor=0):
+        self.moveleft(self.__idx, jumpFactor)
 
-    def move_diagld(self):
-        self.movediagld(self.__idx)
+    def move_diagru(self, jumpFactor=0):
+        self.movediagru(self.__idx, jumpFactor)
+
+    def move_diagrd(self, jumpFactor=0):
+        self.movediagrd(self.__idx, jumpFactor)
+
+    def move_diaglu(self, jumpFactor=0):
+        self.movediaglu(self.__idx, jumpFactor)
+
+    def move_diagld(self, jumpFactor=0):
+        self.movediagld(self.__idx, jumpFactor)
+
 
 ###
 class MyWorld(object):
@@ -128,14 +139,18 @@ class MyWorld(object):
         self.__creatures.append(creature)
 
         MyWorld.creatures_id += 1
-        
+
     def spawn_creatures(self, n):
         for _ in range(0, n):
             self.spawn_creature()
 
     def kill_creature(self, creatureIdx):
         self.mygraphics.killCircle(creatureIdx)
-        
+
+    def kill_creatures(self, n):
+        for id in range(n):
+            self.kill_creature(id)
+
     def refresh_creatures(self):
         self.mygraphics.refreshCircles()
 
@@ -147,8 +162,8 @@ class MyWorld(object):
             while generation <= GENERATIONS:
                 while (frame <= FRAMES_PER_GEN) and self.mygraphics.runSimulation:
                     #
-                    sleep((10.0 // WORLD_SPEED))
-                    
+                    sleep((10.0 // WORLD_SPEED))  # FPS RELEASE \ CPU UTIL LOAD
+
                     self.mygraphics.isSimulationDestroyed()
 
                     self.mygraphics.clearScreen()
@@ -160,9 +175,10 @@ class MyWorld(object):
                     self.refresh_creatures()
                     #
                     ####################################################################################################################################
+
                     for id in range(POPULATION):
                         self.creatureByIdx(id).behaviour_randmove()
-                        
+
                     ####################################################################################################################################
                     #
                     # Swap buffers
@@ -171,11 +187,11 @@ class MyWorld(object):
                     self.mygraphics.setTimerTick(WORLD_SPEED)
                     #
                     frame += 1
-                    print(f"Frame: {frame}")
+                    print(f"[COUT>]: ([Frame]: {frame})")
                 generation += 1
                 frame = 0
                 print(
-                    f"Generation: {generation} -- Population: {self.__currentPopulation}"
+                    f"[COUT>]: ([Generation]: {generation} -- [Population]: {self.__currentPopulation})"
                 )
                 #
                 if not self.mygraphics.runSimulation:
