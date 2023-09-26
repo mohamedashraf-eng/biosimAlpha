@@ -2,7 +2,7 @@ import pygame
 import sys
 import random
 from enum import Enum
-from llist import sllist
+import uuid
 
 WHITE = (229, 229, 229)
 BLACK = (0, 0, 0)
@@ -24,6 +24,7 @@ JUMP_FACTOR_MAX = 10
 # Circle class
 class Circle:
     def __init__(self, x, y, radius, color):
+        self.__uuid = uuid.uuid4()  # Generate a UUID for the circle
         self.__x = x
         self.__y = y
         self.__radius = radius
@@ -67,6 +68,10 @@ class Circle:
     @color.setter
     def color(self, new_color_val=0):
         self.__color = new_color_val
+
+    @property
+    def uuid(self):
+        return self.__uuid  # Getter for the UUID
 
     def getPos(self):
         return (self.x, self.y)
@@ -150,18 +155,17 @@ class MyGraphics(object):
         self.clock.tick(fps)
 
     #
-    def __checkCollision(self, circleIdx):
-        if 0 <= circleIdx < len(self.__circles):
-            circle_obj = self.__circles[circleIdx]
+    def __checkCollision(self, circl_uuid):
+        circle_obj = self.__circles[circl_uuid]
 
-            for other_circle in self.__circles:
-                if other_circle != circle_obj:
-                    distance = (
-                        (circle_obj.x - other_circle.x) ** 2
-                        + (circle_obj.y - other_circle.y) ** 2
-                    ) ** 0.5
-                    if distance < (circle_obj.radius + other_circle.radius):
-                        return True
+        for other_circle in self.__circles:
+            if other_circle != circle_obj:
+                distance = (
+                    (circle_obj.x - other_circle.x) ** 2
+                    + (circle_obj.y - other_circle.y) ** 2
+                ) ** 0.5
+                if distance < (circle_obj.radius + other_circle.radius):
+                    return True
         return False
 
     def __resolveCollisions(self):
@@ -218,27 +222,42 @@ class MyGraphics(object):
             pygame.draw.line(self.screen, GRID_COLOR, (0, y), (SCREEN_WIDTH, y))
 
     def __addCircle(self, respawn_x, respawn_y, radius, color):
-        if len(self.__circles) < self.__gridSize:
-            self.__lockGrid((respawn_x, respawn_y))
-            #
-            circle = Circle(respawn_x, respawn_y, radius, color)
+        if len(self.__unlockedGrids) > 0:
+            # Generate a random index
+            random_value = random.choice(list(self.__unlockedGrids))
+
+            spawn_x, spawn_y = random_value  # Extract the (x, y) tuple
+            spawn_x, spawn_y = self.__gridRelative2Physical(spawn_x, spawn_y)
+
+            # Create a Circle object with a UUID
+            circle = Circle(spawn_x, spawn_y, radius, color)
+
             self.__circles.append(circle)
             MyGraphics.circle_counter_q += 1
+
+            return circle.uuid
+        else:
+            print("No unlocked grids available to spawn a circle.")
 
     def __drawCircle(self, circleIdx):
         if 0 <= circleIdx < len(self.__circles):
             self.__circles[circleIdx].draw(self.screen)
 
-    def __moveCircle(self, circleIdx, moving_dir: MovingDirection, jumpFactor=1):
-        if 0 <= circleIdx < len(self.__circles):
-            circle_obj = self.__circles[circleIdx]
+    def __moveCircle(self, circle_uuid, moving_dir: MovingDirection, jumpFactor=1):
+        # Find the circle with the given UUID
+        circle_obj = None
+        for circle in self.__circles:
+            if circle.uuid == circle_uuid:
+                circle_obj = circle
+                break
 
+        if circle_obj is not None:
             if moving_dir in MyGraphics.directions:
                 dx, dy = MyGraphics.directions[moving_dir]
 
-                if jumpFactor <= 0:
+                if jumpFactor < 1:
                     jumpFactor = 1
-                if jumpFactor >= JUMP_FACTOR_MAX:
+                if jumpFactor > JUMP_FACTOR_MAX:
                     jumpFactor = JUMP_FACTOR_MAX
 
                 # Calculate the new position with the jump factor
@@ -249,14 +268,21 @@ class MyGraphics(object):
                 new_x = max(GRID_SIZE // 2, min(new_x, SCREEN_WIDTH - GRID_SIZE // 2))
                 new_y = max(GRID_SIZE // 2, min(new_y, SCREEN_HEIGHT - GRID_SIZE // 2))
 
-                if (new_x, new_y) in self.__unlockedGrids:
-                    self.__unlockGrid((circle_obj.x, circle_obj.y))
-                    self.__lockGrid((new_x, new_y))
+                # Check if the new position is in an unlocked grid
+                new_grid_pos = (
+                    round(new_x / GRID_SIZE) * GRID_SIZE,
+                    round(new_y / GRID_SIZE) * GRID_SIZE,
+                )
+                if new_grid_pos in self.__unlockedGrids:
+                    self.__unlockGrid((round(circle_obj.x), round(circle_obj.y)))
+                    self.__lockGrid(new_grid_pos)
                     circle_obj.move(new_x, new_y)
+                else:
+                    print("Error: Invalid `moving_dir`")
             else:
                 print("Error: Invalid `moving_dir`")
         else:
-            print(f"Invalid circle index: {circleIdx}")
+            print(f"Invalid circle UUID: {circle_uuid}")
 
     def __getRandomGridPos(self):
         return random.choice(self.__gridCenters)
@@ -298,7 +324,7 @@ class MyGraphics(object):
             spawn_x, spawn_y = random_value  # Extract the (x, y) tuple
             spawn_x, spawn_y = self.__gridRelative2Physical(spawn_x, spawn_y)
 
-            self.__addCircle(
+            return self.__addCircle(
                 spawn_x, spawn_y, ((GRID_SIZE // 2) - 1), self.getRandomColorRGB()
             )
         else:
@@ -308,11 +334,13 @@ class MyGraphics(object):
         for circle in self.__circles:
             circle.draw(self.screen)
 
-    def killCircle(self, circleIdx):
-        if 0 <= circleIdx < len(self.__circles):
-            circle_obj = self.__circles[circleIdx]
+    def killCircle(self, circle_uuid):  # Change the parameter to UUID
+        for circle in self.__circles:
+            if circle.uuid == circle_uuid:  # Check UUID for matching
+                self.__unlockGrid((circle.x, circle.y))
+                self.__circles.remove(circle)  # Remove the circle by UUID
+                MyGraphics.circle_counter_q -= 1
+                break  # Exit the loop after removing the circle
 
-            if (circle_obj.x, circle_obj.y) in self.__lockedGrids:
-                self.__unlockGrid((circle_obj.x, circle_obj.y))
-            del circle_obj
-            MyGraphics.circle_counter_q -= 1
+    def get_circle_pos(self, circl_uuid):
+        return self.__circles[circl_uuid].getPos()

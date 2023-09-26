@@ -1,8 +1,7 @@
-from mygraphics import MyGraphics, GRID_ENABLED
+from mygraphics2 import MyGraphics, GRID_ENABLED
 from time import sleep
 import random
-import uuid
-import string
+import threading
 from enum import Enum
 
 #################### > Neuron
@@ -34,13 +33,6 @@ FRAMES_PER_GEN = 100
 GENERATIONS = 5000
 POPULATION = 1000
 ####################
-
-
-class Neuron(object):
-    def __init__(self):
-        # TODO
-        pass
-
 
 class Genome(object):
     def __init__(self, length=None):
@@ -79,14 +71,12 @@ class Genome(object):
 
     def get_genome_str(self):
         return str(self.__genome[0])
-
-
+    
 class Creature(object):
     def __init__(self):
-        # Generate a random UUID (version 4)
-        self.__uuid = uuid.uuid4()
         self.__genome = Genome(GENOME_LENGTH)
-
+        self.__uuid = 0
+        
     def base_init(self, get_pos):
         self.getpos = get_pos
 
@@ -169,26 +159,23 @@ class Creature(object):
 
     def get_pos(self):
         return self.getpos(self.__uuid)
-
-
-###
+    
 class MyWorld(object):
     creatures_count = 0
 
     def __init__(self, world_title="World"):
         self.mygraphics = MyGraphics(world_title)
+
         # Params
         # Use a dictionary to store creatures with UUIDs as keys
         self.__creatures = {}
         self.__currentPopulation = 0
-        self.__creature_id_counter = 0  # Incremented to generate unique UUIDs
         #
         # sysinit
         self.spawn_creatures(POPULATION)
         #
         self.main_loop()
 
-    ##
     def __creature_ginit(self, creature_obj):
         """ Initialize the creature graphics usage """
         #
@@ -206,61 +193,43 @@ class MyWorld(object):
         creature_obj.behaviour_init()
 
         creature_obj.base_init(get_pos=self.mygraphics.get_circle_pos)
-
-    ##
+    
     def spawn_creature(self):
         creature = Creature()
-        circle_uuid = (
-            self.mygraphics.spawnCircle()
-        )  # Get the UUID of the spawned circle
-        creature.uuid = circle_uuid  # Pass the circle UUID to the creature
+        creature.uuid = self.mygraphics.spawnCircle()
         self.__creature_ginit(creature)
         self.__creatures[creature.uuid] = creature
         self.__currentPopulation += 1
-
-    def spawn_creatures(self, n):
-        for _ in range(0, n):
-            self.spawn_creature()
-
+        
     def kill_creature(self, creature_uuid):
-        if creature_uuid in self.__creatures:
-            self.mygraphics.killCircle(
-                creature_uuid
-            )  # Use creature_uuid to kill the circle
+        if creature_uuid in (self.__creatures.keys()):
+            self.mygraphics.killCircle(creature_uuid)
             del self.__creatures[creature_uuid]
             self.__currentPopulation -= 1
-
-    def kill_creatures(self, n):
-        for _ in range(n):
-            if self.__currentPopulation > 0:
-                self.kill_creature(0)  # Kill the first creature in the list
-
+        
     def refresh_creatures(self):
         self.mygraphics.refreshCircles()
-
-    def apply_natural_selection(self):
-        # Calculate the left half width of the map
-        left_half_width = 1080 // 2
-
-        # Create a list to store the IDs of creatures to be killed
-        creature_ids_to_kill = []
-
-        # Identify creatures to be killed and store their IDs
-        for creature_uuid, creature in self.__creatures.items():
-            x, _ = self.mygraphics.get_circle_pos(creature_uuid)
-            if x < left_half_width:
-                creature_ids_to_kill.append(creature_uuid)
-
-        # Kill the selected creatures
-        for creature_uuid in creature_ids_to_kill:
+    
+    # Initals
+    def spawn_creatures(self, n):
+        for _ in range(n):
+            self.spawn_creature()
+            
+    def kill_creatures(self):
+        for creature_uuid in list(self.__creatures.keys()):
             self.kill_creature(creature_uuid)
-
+    
+    def apply_natural_selection(self, type=1):
+        print(f"Applying natural selection")
+        for creature_uuid in list(self.__creatures.keys()):
+            if self.__creatures[creature_uuid].get_pos()[0] < (1080 // 2):
+                self.kill_creature(creature_uuid)
     ##
     def main_loop(self):
         try:
             generation = 1
             frame = 1
-            done = True
+            counter = 0
             while generation <= GENERATIONS:
                 while (frame <= FRAMES_PER_GEN) and self.mygraphics.runSimulation:
                     #
@@ -273,19 +242,15 @@ class MyWorld(object):
                     # Draw the grid
                     if GRID_ENABLED:
                         self.mygraphics.drawGrid()
-
+                    
                     self.refresh_creatures()
                     #
                     ####################################################################################################################################
-
+                
                     for creature_uuid in list(self.__creatures.keys()):
                         creature = self.__creatures[creature_uuid]
                         creature.genome_MR()
-
-                    if done:
-                        self.apply_natural_selection()
-                        done = False
-                    # self.apply_natural_selection()
+                    
                     ####################################################################################################################################
                     #
                     # Swap buffers
@@ -297,15 +262,16 @@ class MyWorld(object):
                     print(f"[COUT>]: ([Frame]: {frame})")
                 generation += 1
                 frame = 0
+                self.apply_natural_selection()
                 print(
                     f"[COUT>]: ([Generation]: {generation} -- [Population]: {self.__currentPopulation})"
                 )
                 #
                 if not self.mygraphics.runSimulation:
                     self.mygraphics.destorySimulation()
-        except Exception as e:
+        except KeyboardInterrupt:
             # Display an error message on the screen
-            print(f"An error occurred: {e}")
+            print(f"Simulation dead @[TIMEX]")
             if not self.mygraphics.runSimulation:
                 self.mygraphics.destorySimulation()
 
